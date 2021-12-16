@@ -1,6 +1,7 @@
-import time
 import json
 import requests
+import time
+from translate import Translator
 
 
 def get_weather_by_city(city):
@@ -13,20 +14,42 @@ def get_weather_by_city(city):
         'lang' : "ru"
     }
 
-    res = requests.get(api_url, params=params)
-    data = res.json()
-    return data
+
+    try:
+        res = requests.get(api_url, params=params, timeout=0.5)
+        data = res.json()
+        return [data, res.status_code]
+    except ConnectionError:
+        print("Ошибка подключения!")
+        with open('dataset.json', 'r') as f:
+            temp = json.load(f)
+            return temp
+    except requests.Timeout:
+        print("Ошибка времени запроса!")
+        with open('dataset.json', 'r') as f:
+            temp = json.load(f)
+            return temp
+    except requests.RequestException:
+        print("Глобальная ошибка!")
 
 
-city = input("Для какого города необходима информация? ")
-timeInterval = int(input("С какой периодичностью обновлять данные (в секундах)? "))
+translator = Translator(from_lang="rus", to_lang="en")
 while(True):
-    response = get_weather_by_city(city)
-    result_str = "Текущие показатели погоды в {}: {}"
-    print(result_str.format(city, response["main"]))
-    with open('dataset.json', "w+") as file:
-        json.dump(response, file)
-    with open('dataset.json', 'r') as file:
-        temp = json.load(file)
-        print(temp)
-    time.sleep(180)
+    try:
+        city_rus = input("Для какого города необходима информация? ")
+        city = translator.translate(city_rus)
+        timeInterval = int(input("С какой периодичностью обновлять данные (в секундах)? "))
+        response = get_weather_by_city(city)
+        if(response[1] != 200):
+            continue
+        result_str = "Текущие показатели погоды в городе {} : {}"
+        print(result_str.format(city_rus, response[0]["main"]))
+        with open('dataset.json', "w+") as file:
+            json.dump(response[0], file)
+        with open('dataset.json', 'r') as file:
+            temp = json.load(file)
+            print(temp)
+            time.sleep(timeInterval)
+    except KeyboardInterrupt:
+        print("Выполнение программы прервано!")
+        exit(0)
