@@ -6,15 +6,12 @@ from translate import Translator
 
 def get_weather_by_city(city):
     api_url = "http://api.openweathermap.org/data/2.5/weather"
-
     params = {
         'q': city,
         'appid': "8490d0a5fee05ff6087e44f358039bfa",
         'units': "metric",
-        'lang' : "ru"
+        'lang': "ru"
     }
-
-
     try:
         res = requests.get(api_url, params=params, timeout=0.5)
         data = res.json()
